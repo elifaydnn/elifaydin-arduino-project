@@ -1,0 +1,135 @@
+#include <LiquidCrystal_I2C.h>
+
+#include <OneWire.h>
+#include <DallasTemperature.h>
+OneWire oneWire(6);
+DallasTemperature DS18B20(&oneWire);
+DeviceAddress DS18B20adres;
+float santigrat;
+
+#include "DHT.h"
+#define DHTPIN 2  // Digital pin connected to the DHT sensor
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
+int nem;
+
+#include <Wire.h>
+#include <DS3231.h>
+
+RTClib myRTC;
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+String gelen = "";
+bool stringOk = false;
+unsigned long zaman;
+void setup() {
+  Serial.begin(9600);
+  gelen.reserve(100);
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(4, 0);
+  lcd.print("Merhaba!");
+  lcd.setCursor(3, 1);
+  lcd.print("ELIF AYDIN");
+  dht.begin();
+  Wire.begin();
+  DS18B20.begin();
+  DS18B20.getAddress(DS18B20adres, 0);
+  DS18B20.setResolution(DS18B20adres, 12);
+  delay(500);
+  zaman = millis();
+}
+
+void loop() {
+   DateTime now = myRTC.now();
+  lcd.setCursor(4, 0);
+  lcd.print("Merhaba!");
+  lcd.setCursor(3, 1);
+  lcd.print("ELIF AYDIN");
+
+  if ((millis() - zaman) > 3000) {
+    //---------DHT11-----------
+    nem = dht.readHumidity();
+    if (isnan(nem)) {
+      Serial.println(F("DHT sensor okunamiyor!"));
+      return;
+    }
+    Serial.print(F("Nem: %"));
+    Serial.println(nem);
+    //---------DS3231-----------
+   
+    Serial.print(now.year(), DEC);
+    Serial.print('/');
+    Serial.print(now.month(), DEC);
+    Serial.print('/');
+    Serial.print(now.day(), DEC);
+    Serial.print(' ');
+    Serial.print(now.hour(), DEC);
+    Serial.print(':');
+    Serial.print(now.minute(), DEC);
+    Serial.print(':');
+    Serial.print(now.second(), DEC);
+    Serial.println();
+    //---------DS18B20-----------
+    DS18B20.requestTemperatures();
+    santigrat = DS18B20.getTempC(DS18B20adres);
+    Serial.print(santigrat);
+    Serial.println(" C");
+    zaman=millis();
+  }
+  gelen = Serial.readStringUntil('.');
+
+
+  if (gelen == "s") {
+    gelen = "";
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Sicaklik degeri:");
+    lcd.setCursor(5, 1);
+    lcd.print(santigrat);
+    lcd.setCursor(11, 1);
+    lcd.print("C");
+    delay(5000);
+    lcd.clear();
+  }
+  if (gelen == "n") {
+    gelen = "";
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Nem degeri:");
+    lcd.setCursor(6, 1);
+    lcd.print(nem);
+    lcd.setCursor(9, 1);
+    lcd.print("%");
+    delay(5000);
+    lcd.clear();
+  }
+  if (gelen == "t") {
+    gelen = "";
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(now.day(), DEC);
+    lcd.setCursor(2, 0);
+    lcd.print('/');
+    lcd.setCursor(3, 0);
+    lcd.print(now.month(), DEC);
+    lcd.setCursor(5, 0);
+    lcd.print('/');
+    lcd.setCursor(6, 0);
+    lcd.print(now.year(), DEC);
+
+    lcd.setCursor(0, 1);
+    lcd.print(now.hour(), DEC);
+    lcd.setCursor(2, 1);
+    lcd.print(':');
+    lcd.setCursor(3, 1);
+    lcd.print(now.minute(), DEC);
+    lcd.setCursor(5, 1);
+    lcd.print(':');
+    lcd.setCursor(6, 1);
+    lcd.print(now.second(), DEC);
+    delay(5000);
+    lcd.clear();
+  }
+}
+
